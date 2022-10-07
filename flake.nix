@@ -11,7 +11,7 @@
             inherit system;
           };
         in {
-          defaultPackage = pkgs.callPackage ./default.nix { };
+          packages.default = pkgs.callPackage ./default.nix { };
         }
       );
 }
