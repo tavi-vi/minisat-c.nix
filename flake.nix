@@ -11,7 +11,10 @@
             inherit system;
           };
         in {
-          packages.default = pkgs.callPackage ./default.nix { };
+          packages = {
+            default = pkgs.callPackage ./default.nix { };
+            emscripten = pkgs.callPackage ./default.nix { targetEmscripten = true; };
+          };
         }
       );
 }

@@ -1,6 +1,12 @@
-{ lib, stdenv, fetchFromGitHub, minisat, zlib }:
+{ lib, stdenv, emscriptenStdenv
+, fetchFromGitHub
+, minisat, zlib
+, targetEmscripten ? false }:
 
-stdenv.mkDerivation rec {
+(if targetEmscripten
+  then emscriptenStdenv
+  else stdenv).mkDerivation rec {
+
   pname = "minisat-c-bindings";
   version = "2.2.1";
 
@@ -14,8 +20,23 @@ stdenv.mkDerivation rec {
   buildInputs = [ minisat zlib ];
 
   configurePhase = ''
-    make config prefix="$out" MINISAT_INCLUDE=-I${minisat}/include MINISAT_LIB="-L${minisat}/lib -lminisat"
+    make config prefix="$out" MINISAT_INCLUDE="-I${minisat}/include ${if targetEmscripten then "$NIX_CFLAGS_COMPILE" else ""}" MINISAT_LIB="${builtins.concatStringsSep " " (map (s: lib.escapeShellArg "-L${s}") buildInputs)} -lminisat"
   '';
+  buildPhase = if targetEmscripten
+    then ''
+      emmake make static
+    ''
+    else ''
+      emmake make
+    '';
+  installPhase = if targetEmscripten
+    then ''
+      emmake make install-static
+    ''
+    else ''
+      emmake make install
+    '';
+  checkPhase = "";
 
   meta = with lib; {
     description = "Compact and readable SAT solver";
