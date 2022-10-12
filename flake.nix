@@ -1,5 +1,6 @@
 {
   inputs = {
+    nixpkgs.url = "github:tavi-vi/nixpkgs/minisat-emscripten";
     flake-utils.url = "github:numtide/flake-utils";
   };
 

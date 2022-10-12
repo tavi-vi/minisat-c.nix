@@ -1,6 +1,7 @@
-{ lib, stdenv, emscriptenStdenv
-, fetchFromGitHub
+{ lib, stdenv, emscriptenStdenv, fetchFromGitHub
+, pkg-config
 , minisat, zlib
+, emscriptenPackages
 , targetEmscripten ? false }:
 
 (if targetEmscripten
@@ -17,24 +18,32 @@
     sha256 = "sha256-GGym3p4f+wMjfAHvEV1PYLau4TR5/D3baSYu7IXOHdw=";
   };
 
-  buildInputs = [ minisat zlib ];
+  nativeBuildInputs = [ pkg-config ];
+  propagatedBuildInputs = if targetEmscripten
+    then [ emscriptenPackages.zlib emscriptenPackages.minisat ]
+    else [ minisat zlib.dev ];
+
+  CXXFLAGS = "-iquote ${minisat}/include";
+  LDFLAGS = "-L${minisat}/lib";
 
   configurePhase = ''
-    make config prefix="$out" MINISAT_INCLUDE="-I${minisat}/include ${if targetEmscripten then "$NIX_CFLAGS_COMPILE" else ""}" MINISAT_LIB="${builtins.concatStringsSep " " (map (s: lib.escapeShellArg "-L${s}") buildInputs)} -lminisat"
+    CXXFLAGS="$CXXFLAGS `pkg-config zlib --cflags`"
+    LDFLAGS="$LDFLAGS `pkg-config zlib --libs`"
+    make config prefix="$out" MBINDC_LDFLAGS="$LDFLAGS -lminisat"
   '';
   buildPhase = if targetEmscripten
     then ''
       emmake make static
     ''
     else ''
-      emmake make
+      make
     '';
   installPhase = if targetEmscripten
     then ''
       emmake make install-static
     ''
     else ''
-      emmake make install
+      make install
     '';
   checkPhase = "";
 
